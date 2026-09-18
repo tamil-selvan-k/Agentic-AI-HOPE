@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 2 lab: build the Placement Assistant | SoDak EduTech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #ffffff;
+  --surface: #f5f1f9;
+  --surface-2: #ece5f3;
+  --ink: #22163a;
+  --muted: #62586f;
+  --plum: #3d2260;
+  --plum-strong: #2c1747;
+  --sienna: #a8481f;
+  --gold: #d9a520;
+  --gold-wash: rgba(217, 165, 32, .32);
+  --line: #e2dae9;
+  --code-bg: #1c1229;
+  --code-ink: #ede6f5;
+  --code-note: #c9b8e0;
+  --focus: #a8481f;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --serif: "IBM Plex Serif", Cambria, Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #150d22; --surface: #20152f; --surface-2: #2a1d3c; --ink: #ede6f5; --muted: #b3a7c2;
+    --plum: #cdb8ec; --plum-strong: #3d2260; --sienna: #eb8a5e; --gold: #e3b43c; --gold-wash: rgba(227, 180, 60, .28);
+    --line: #3a2c50; --code-bg: #0e0818; --code-ink: #ede6f5; --code-note: #b9a6d6; --focus: #eb8a5e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #150d22; --surface: #20152f; --surface-2: #2a1d3c; --ink: #ede6f5; --muted: #b3a7c2;
+  --plum: #cdb8ec; --plum-strong: #3d2260; --sienna: #eb8a5e; --gold: #e3b43c; --gold-wash: rgba(227, 180, 60, .28);
+  --line: #3a2c50; --code-bg: #0e0818; --code-ink: #ede6f5; --code-note: #b9a6d6; --focus: #eb8a5e;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1rem/1.62 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--plum); text-underline-offset: .18em; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+code { font-family: var(--mono); font-size: .88em; background: var(--surface); padding: .08em .32em; border-radius: 4px; overflow-wrap: anywhere; }
+p { margin: 0 0 .9rem; max-width: 72ch; }
+strong { font-weight: 600; }
+
+.topbar { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  max-width: 80rem; margin: 0 auto; padding: 1.1rem 1.5rem 0; font-size: .92rem; color: var(--muted); }
+.topbar .brand { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; color: var(--plum); }
+
+.layout { display: grid; grid-template-columns: 16.5rem minmax(0, 1fr); gap: 3rem; max-width: 80rem; margin: 0 auto; padding: 0 1.5rem; }
+
+/* ---------- nav */
+nav.toc { position: sticky; top: 1.5rem; align-self: start; max-height: calc(100vh - 3rem); overflow-y: auto; padding: 2.2rem 0 2rem; font-size: .9rem; }
+nav.toc details > ol { list-style: none; margin: 0; padding: 0; }
+nav.toc details > ol > li { margin: 0 0 .55rem; }
+nav.toc details > ol > li > a { font-weight: 600; color: var(--ink); text-decoration: none; }
+nav.toc ol ol { list-style: none; margin: .3rem 0 .2rem; padding: 0 0 0 .9rem; border-left: 1px solid var(--line); }
+nav.toc ol ol a { display: block; padding: .12rem 0; color: var(--muted); text-decoration: none; }
+nav.toc a:hover { color: var(--sienna); }
+nav.toc a.active { color: var(--sienna); }
+nav.toc .count { float: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .82rem; }
+nav.toc .count.complete { color: var(--sienna); font-weight: 600; }
+.theme { margin-top: 1.4rem; font: inherit; font-size: .85rem; background: none; border: 1px solid var(--line); color: var(--muted); padding: .35rem .7rem; border-radius: 6px; cursor: pointer; }
+.theme:hover { color: var(--ink); border-color: var(--muted); }
+.reset { margin-left: .4rem; }
+
+main { min-width: 0; padding-bottom: 4rem; }
+
+/* ---------- hero */
+.hero { padding: 2.2rem 0 2.4rem; border-bottom: 1px solid var(--line); }
+.hero h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(2.2rem, 4.6vw, 3.6rem); line-height: 1.06; letter-spacing: -.012em; color: var(--plum); margin: 0 0 1rem; max-width: 18ch; }
+.hero .lede { font-size: 1.18rem; line-height: 1.55; color: var(--ink); max-width: 60ch; margin-bottom: 1.8rem; }
+.strip { display: flex; gap: 6px; margin: 0 0 .7rem; }
+.seg { position: relative; min-width: 0; display: block; overflow: hidden; border-radius: 8px; background: var(--surface); color: var(--ink); text-decoration: none; padding: .75rem .85rem .8rem; border: 1px solid var(--line); }
+.seg .fill { position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); background: var(--gold-wash); transition: width .5s ease; }
+@media (prefers-reduced-motion: reduce) { .seg .fill { transition: none; } }
+.seg-text { position: relative; display: flex; flex-direction: column; line-height: 1.25; }
+.seg-text strong { font-family: var(--serif); font-size: 1.6rem; color: var(--sienna); font-weight: 600; }
+.seg-text span { font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg:hover { border-color: var(--muted); }
+.strip-note { font-size: .88rem; color: var(--muted); margin: 0 0 1.6rem; }
+
+/* ---------- parts and tasks */
+.part { padding: 2.6rem 0 1rem; }
+.part > h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1.15; margin: 0 0 .9rem; color: var(--plum); display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
+.pnum { color: var(--sienna); min-width: 1.1ch; }
+.part > h2 small { font-family: var(--sans); font-weight: 400; font-size: .95rem; color: var(--muted); }
+h3.sub { font-size: 1.02rem; font-weight: 600; margin: 1.6rem 0 .6rem; }
+
+.task { border-top: 1px solid var(--line); padding: 1.6rem 0 .6rem; margin-top: 1.4rem; }
+.task-head { display: grid; grid-template-columns: 3.2rem 1fr auto; align-items: baseline; gap: .6rem; margin-bottom: .8rem; }
+.task-head .num { font-family: var(--mono); font-weight: 500; color: var(--sienna); }
+.task-head h3 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 1.35rem; line-height: 1.25; }
+.task-head .mins { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+ol.rules { padding-left: 1.2rem; max-width: 72ch; margin: 0 0 1rem; }
+ol.rules li { margin: 0 0 .35rem; padding-left: .2rem; }
+ol.rules li::marker { color: var(--sienna); font-weight: 600; }
+
+/* ---------- tables */
+.tbl { overflow-x: auto; margin: 0 0 1.1rem; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+th, td { text-align: left; vertical-align: top; padding: .5rem .75rem; border-bottom: 1px solid var(--line); }
+thead th { font-weight: 600; color: var(--muted); font-size: .85rem; border-bottom: 1.5px solid var(--muted); }
+.spec td:first-child { width: 9rem; color: var(--muted); font-weight: 500; }
+.spec td:first-child code { white-space: nowrap; overflow-wrap: normal; }
+.spec thead th:last-child { font-family: var(--mono); color: var(--ink); font-weight: 500; font-size: .9rem; }
+.schema td:first-child { white-space: nowrap; }
+.drives td:nth-child(4) { white-space: nowrap; }
+.events td:first-child { white-space: nowrap; }
+
+/* ---------- code */
+figure.code { position: relative; margin: 0 0 1.1rem; background: var(--code-bg); border-radius: 9px; max-width: 100%; }
+figure.code figcaption { font-size: .78rem; color: var(--code-note); padding: .6rem 1rem 0; }
+figure.code pre { margin: 0; padding: .7rem 4.6rem .9rem 1rem; overflow-x: auto; }
+figure.code figcaption + button + pre { padding-top: .35rem; }
+figure.code pre code { background: none; padding: 0; color: var(--code-ink); font-size: .84rem; line-height: 1.6; white-space: pre; overflow-wrap: normal; }
+.copy { position: absolute; top: .45rem; right: .5rem; font: 500 .75rem var(--sans); color: var(--code-note); background: transparent; border: 1px solid rgba(201, 184, 224, .35); border-radius: 5px; padding: .2rem .55rem; cursor: pointer; }
+.copy:hover { color: #fff; border-color: rgba(255, 255, 255, .6); }
+
+.task > :is(p, .tbl, figure, ol, .done) { margin-left: 3.8rem; }
+
+/* ---------- done */
+.done { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .4rem 1rem; align-items: start; background: var(--surface); border-radius: 9px; padding: .85rem 1rem .3rem; margin-top: .4rem; margin-bottom: 1rem; }
+.done label { display: flex; align-items: center; gap: .5rem; font-weight: 600; cursor: pointer; white-space: nowrap; padding-top: .05rem; }
+.done input { width: 1.15rem; height: 1.15rem; accent-color: var(--sienna); margin: 0; cursor: pointer; }
+.done-body { min-width: 0; }
+.done-body > p { margin-bottom: .6rem; }
+.done-body figure.code { margin-bottom: .7rem; }
+.done.is-done label span { color: var(--sienna); }
+
+/* ---------- finish */
+ul.checklist, ul.stretch { max-width: 72ch; padding-left: 1.2rem; }
+ul.checklist li, ul.stretch li { margin: 0 0 .4rem; }
+.checkpoint { background: var(--plum-strong); color: #fff; border-radius: 12px; padding: 1.6rem 1.8rem 1.1rem; margin: 1.8rem 0; }
+.checkpoint .cp-label { color: var(--gold); font-weight: 600; margin-bottom: .4rem; }
+.checkpoint .cp-q { font-family: var(--serif); font-size: clamp(1.3rem, 2.4vw, 1.7rem); line-height: 1.3; font-weight: 600; margin-bottom: .8rem; }
+.checkpoint code { background: rgba(255, 255, 255, .12); color: #fff; }
+
+.site-foot { max-width: 80rem; margin: 0 auto; padding: 1.4rem 1.5rem 2.4rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.print-foot { display: none; }
+
+/* ---------- small screens */
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  nav.toc { position: static; max-height: none; padding: 1rem 0 0; }
+  nav.toc details summary { cursor: pointer; font-weight: 600; padding: .6rem 0; }
+  .task > :is(p, .tbl, figure, ol, .done) { margin-left: 0; }
+  .task-head { grid-template-columns: 2.8rem 1fr; }
+  .task-head .mins { grid-column: 2; }
+}
+@media (min-width: 961px) { nav.toc details > summary { display: none; } }
+@media (max-width: 640px) {
+  .strip { flex-wrap: wrap; }
+  .seg { flex-basis: calc(50% - 3px) !important; flex-grow: 0 !important; }
+  .done { grid-template-columns: minmax(0, 1fr); }
+  .spec td:first-child { width: 6rem; }
+}
+
+/* ---------- print */
+@media print {
+  @page { margin: 16mm 14mm 20mm; }
+  :root { --paper: #fff; --surface: #f4f0f8; --ink: #111; --muted: #555; --line: #ccc; --code-bg: #f4f0f8; --code-ink: #111; --code-note: #555; }
+  nav.toc, .copy, .theme, .strip-note { display: none !important; }
+  .layout { display: block; padding: 0; }
+  .seg .fill { display: none; }
+  figure.code, .done, .checkpoint, table { break-inside: avoid; }
+  figure.code pre code { white-space: pre-wrap; }
+  .task > :is(p, .tbl, figure, ol, .done) { margin-left: 0; }
+  .checkpoint { background: #fff; color: #111; border: 1.5px solid #3d2260; }
+  .checkpoint code { background: #f4f0f8; color: #111; }
+  .site-foot { display: none; }
+  .print-foot { display: block; position: fixed; bottom: 0; left: 0; right: 0; font-size: 9pt; color: #555; text-align: center; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<div class="topbar"><span class="brand">SoDak EduTech</span><span>Agentic AI Track, Day 2 lab</span></div>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <details open>
+    <summary>Contents and progress</summary>
+    <ol><li><a href="#setup">Before you start</a></li><li><a href="#domain">The seed data</a></li><li><a href="#part1">1 Tools</a><span class="count" data-count="1"></span><ol><li><a href="#p1-1">1.1 Read the given code</a></li><li><a href="#p1-2">1.2 Sample tools</a></li><li><a href="#p1-3">1.3 get_student</a></li><li><a href="#p1-4">1.4 list_open_drives</a></li><li><a href="#p1-5">1.5 book_interview_slot</a></li></ol></li><li><a href="#part2">2 A small agent</a><span class="count" data-count="2"></span><ol><li><a href="#p2-1">2.1 run_tool</a></li><li><a href="#p2-2">2.2 The loop</a></li><li><a href="#p2-3">2.3 Talk to it</a></li></ol></li><li><a href="#part3">3 Memory</a><span class="count" data-count="3"></span><ol><li><a href="#p3-1">3.1 Schema</a></li><li><a href="#p3-2">3.2 The SQL</a></li><li><a href="#p3-3">3.3 Remembering</a></li></ol></li><li><a href="#part4">4 Lab</a><span class="count" data-count="4"></span><ol><li><a href="#l1">L1 Fires once</a></li><li><a href="#l2">L2 Append-only</a></li><li><a href="#l3">L3 Pagination</a></li><li><a href="#lab-s">Stretch</a></li></ol></li><li><a href="#finish">Hand in</a></li></ol>
+    <button class="theme" type="button" id="theme">Dark mode</button>
+    <button class="theme reset" type="button" id="reset">Clear ticks</button>
+  </details>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>Build the Placement Assistant</h1>
+  <p class="lede">Five tools, a small agent that uses them, and a memory that survives a restart. By the end of the day you can ask it placement questions in plain English and see every step it took.</p>
+  <div class="strip" role="list" aria-label="Today's four parts by length"><a class="seg" href="#part1" style="flex-grow:70" data-seg="1"><span class="fill"></span><span class="seg-text"><strong>1</strong><span>Tools, 70 min</span></span></a><a class="seg" href="#part2" style="flex-grow:40" data-seg="2"><span class="fill"></span><span class="seg-text"><strong>2</strong><span>Agent, 40 min</span></span></a><a class="seg" href="#part3" style="flex-grow:60" data-seg="3"><span class="fill"></span><span class="seg-text"><strong>3</strong><span>Memory, 60 min</span></span></a><a class="seg" href="#part4" style="flex-grow:90" data-seg="4"><span class="fill"></span><span class="seg-text"><strong>4</strong><span>Lab, 90 min</span></span></a></div>
+  <p class="strip-note">Tick each "Done when" box as you finish a task; the bars fill as you go. Ticks stay in this browser only.</p>
+</header>
+
+<section id="setup" class="part">
+<h2><span class="pnum">0</span>Before you start</h2>
+<p>You need Python 3.10 or newer and your Gemini API key from Day 1. Nothing else: the placement data lives in memory, and the agent's memory in Part 3 uses SQLite, which comes with Python.</p>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>unzip day2-placement-assistant-kit.zip &amp;&amp; cd placement-assistant
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+export GEMINI_API_KEY=your-key       # Windows: set GEMINI_API_KEY=your-key
+pytest tests/test_part1_tools.py     # 19 pass already: the two sample tools</code></pre></figure>
+<h3 class="sub">What is in the kit</h3>
+<figure class="code"><figcaption>placement-assistant/</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>app/
+  domain.py                  Student, Drive, Rule, Slot                  given
+  data.py                    the placement data, in memory               given
+  tools/dispatch.py          turns a model's tool call into a call      given
+  tools/placement_tools.py   2 sample tools + your TODO 1-3             Part 1, lab 1
+  providers.py               Gemini, and a scripted model for tests      given
+  agent.py                   the agent loop                              Part 2, 3
+  memory.py                  the agent's memory in SQLite                Part 3, lab 3
+  verdict.py                 typed verdict                               stretch
+schema/
+  agent.sql                  memory tables                               Part 3
+  append_only.sql            history cannot be rewritten                 lab 2
+scripts/
+  chat.py                    talk to your agent in the terminal          given
+  ab_descriptions.py         which tool does each prompt fire?           given
+tests/                       every check you need to pass                given</code></pre></figure>
+<p>Every test uses a scripted model, so running tests never spends your Gemini quota. The chat script spends quota only when you leave off <code>--mock</code>.</p>
+</section>
+
+<section id="domain" class="part">
+<h2><span class="pnum">&nbsp;</span>The seed data</h2>
+<p>Every test is written against these rows. Keep this table open while you work: when a test fails, the answer is usually here.</p>
+<h3 class="sub">Students</h3>
+<div class="tbl "><table><thead><tr><th>roll_no</th><th>name</th><th>branch</th><th>cgpa</th><th>backlogs</th><th>grad_year</th></tr></thead><tbody><tr><td><code>22CS045</code></td><td>Priya Raman</td><td>CSE</td><td>8.4</td><td>0</td><td>2026</td></tr><tr><td><code>22IT017</code></td><td>Arjun Kumar</td><td>IT</td><td>6.8</td><td>1</td><td>2026</td></tr><tr><td><code>22EC031</code></td><td>Divya Sekar</td><td>ECE</td><td>7.2</td><td>2</td><td>2026</td></tr><tr><td><code>22ME008</code></td><td>Karthik Murugan</td><td>MECH</td><td>7.9</td><td>0</td><td>2026</td></tr></tbody></table></div>
+<h3 class="sub">Drives, with their eligibility rules</h3>
+<div class="tbl drives"><table><thead><tr><th>id</th><th>drive</th><th>status</th><th>rules (id, rule)</th><th>interview slots</th></tr></thead><tbody><tr><td>1</td><td>Zoho, Member Technical Staff</td><td>open, closes in 30 days</td><td>1 <code>cgpa &gt;= 7.0</code><br>2 <code>backlogs &lt;= 0</code><br>3 <code>branch in CSE,IT,ECE</code><br>4 <code>grad_year == 2026</code></td><td>1, 2</td></tr><tr><td>2</td><td>TCS, Ninja</td><td>open, closes in 21 days</td><td>5 <code>cgpa &gt;= 6.0</code><br>6 <code>backlogs &lt;= 1</code><br>7 <code>grad_year == 2026</code></td><td>3</td></tr><tr><td>3</td><td>Freshworks, Software Engineer I</td><td>closed</td><td>8 <code>cgpa &gt;= 8.0</code><br>9 <code>backlogs &lt;= 0</code><br>10 <code>branch in CSE,IT</code></td><td>none</td></tr></tbody></table></div>
+</section>
+
+<section id="part1" class="part" data-part="1">
+<h2><span class="pnum">1</span>Tools <small>70 minutes</small></h2>
+<p>Two sample tools are given. You build three more, following their patterns.</p>
+<section class="task" id="p1-1"><header class="task-head"><span class="num">1.1</span><h3>Read the given code</h3><span class="mins">10 min</span></header>
+<p>Read three short files in this order before touching the tools.</p><p><code>app/domain.py</code> holds the objects your tools receive. <code>app/data.py</code> holds the placement data and the methods that read and change it: the only way a tool touches data. <code>app/tools/dispatch.py</code> turns a model's call into a Python call and already fixes the classic mistakes, like the model sending <code>12.0</code> for an integer.</p>
+<div class="done"><label><input type="checkbox" data-part="1" data-key="1.1"><span>Done when</span></label><div class="done-body"><p>you can say, without looking, which method in <code>app/data.py</code> returns a drive's rules.</p></div></div>
+</section><section class="task" id="p1-2"><header class="task-head"><span class="num">1.2</span><h3>Study the two sample tools</h3><span class="mins">20 min</span></header>
+<p>Open <code>app/tools/placement_tools.py</code>. Two tools are complete, one of each kind, and your instructor live-codes the first. Every pattern you need for your own tools is in them.</p>
+<div class="tbl spec"><table><thead><tr><th>sample</th><th>what to copy from it</th></tr></thead><tbody><tr><td><code>check_eligibility</code></td><td>Read-only. The rule lives in data and <code>_evaluate</code> reads it. Failures are <em>returned</em> as a code plus a hint, never raised. Every failed rule is reported, so the model explains the verdict instead of deciding it.</td></tr><tr><td><code>apply_to_drive</code></td><td>Side effect. Checks run in a fixed order and stop at the first failure. Eligibility is re-checked because an instruction asks but code enforces. The result carries what the next step needs: the free interview slots.</td></tr></tbody></table></div>
+<p>Now read their docstrings. The model never reads your code; the name, the description and the parameters are the whole interface. Both samples follow five rules:</p>
+<ol class="rules">
+<li><strong>One job, verb_noun name.</strong> If the name needs "and", it is two tools.</li>
+<li><strong>Say when, when not, and what changes.</strong> Name the intents that should trigger it, point to the sibling tool for near-misses, and state any side effect.</li>
+<li><strong>Constrain every parameter.</strong> Format and an example for each. Ask for ids the model got from another tool, never free text.</li>
+<li><strong>Return what the next step needs.</strong> Say what comes back and what to do with it.</li>
+<li><strong>Errors are instructions.</strong> Tell the model how to recover.</li>
+</ol>
+<p>The tests check what a machine can: at least 150 characters, every parameter named, <code>Read-only</code> in read tools, <code>Side effect:</code> in tools that write, and no <code>TODO</code> left. Whether a description actually steers the model, you find out in 2.3 and prove in lab 1.</p>
+<div class="done"><label><input type="checkbox" data-part="1" data-key="1.2"><span>Done when</span></label><div class="done-body"><p>the sample tests pass, and you can explain why <code>apply_to_drive</code> re-checks eligibility.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part1_tools.py -k "eligib or apply or dispatch"</code></pre></figure></div></div>
+</section><section class="task" id="p1-3"><header class="task-head"><span class="num">1.3</span><h3>TODO 1: get_student</h3><span class="mins">5 min</span></header>
+<div class="tbl spec"><table><thead><tr><th></th><th>get_student(student_id)</th></tr></thead><tbody><tr><td>Returns</td><td><code>{"student_id", "name", "branch", "cgpa", "backlogs", "grad_year"}</code><br><code>student_id</code> is the roll number, not the database id</td></tr><tr><td>Errors</td><td><code>unknown_student</code>, using the given <code>_unknown_student</code></td></tr><tr><td>Description</td><td>Read-only. Use it for "what's my CGPA" or "how many backlogs do I have"; not for eligibility, which <code>check_eligibility</code> handles.</td></tr></tbody></table></div>
+<div class="done"><label><input type="checkbox" data-part="1" data-key="1.3"><span>Done when</span></label><div class="done-body"><p>the student tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part1_tools.py -k student</code></pre></figure></div></div>
+</section><section class="task" id="p1-4"><header class="task-head"><span class="num">1.4</span><h3>TODO 2: list_open_drives</h3><span class="mins">15 min</span></header>
+<div class="tbl spec"><table><thead><tr><th></th><th>list_open_drives(branch=None, grad_year=None)</th></tr></thead><tbody><tr><td>Returns</td><td><code>{"drives": [{"drive_id", "company", "role", "ctc_lpa", "deadline"}]}</code><br>deadline as <code>YYYY-MM-DD</code></td></tr><tr><td>Includes</td><td><code>repo.list_open_drives(self.clock())</code> already returns open drives, soonest deadline first.</td></tr><tr><td>Filters</td><td>With <code>branch</code>, leave out drives whose <code>branch</code> rule that branch fails. Same for <code>grad_year</code>. Ignore rules on every other field: a student with a low CGPA should still see the drive. Reuse <code>_passes(rule, value)</code>.</td></tr></tbody></table></div>
+<p>With the seed data: no filter gives drives <code>[2, 1]</code>; <code>branch="MECH"</code> gives <code>[2]</code>; <code>grad_year=2025</code> gives nothing.</p>
+<div class="done"><label><input type="checkbox" data-part="1" data-key="1.4"><span>Done when</span></label><div class="done-body"><p>the open-drives tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part1_tools.py -k open_drives</code></pre></figure></div></div>
+</section><section class="task" id="p1-5"><header class="task-head"><span class="num">1.5</span><h3>TODO 3: book_interview_slot</h3><span class="mins">20 min</span></header>
+<p>A side effect with a race in it. Follow <code>apply_to_drive</code>: check in order, stop at the first failure.</p>
+<div class="tbl spec"><table><thead><tr><th></th><th>book_interview_slot(student_id, slot_id)</th></tr></thead><tbody><tr><td>Checks, in order</td><td><code>unknown_student</code>, <code>unknown_slot</code>, <code>no_application</code> (the student has not applied to the slot's drive), <code>slot_taken</code></td></tr><tr><td>slot_taken</td><td><code>repo.claim_slot</code> returned <code>False</code>. Losing a race is a normal outcome, not a crash: include the drive's remaining <code>available_slots</code> and a hint to ask the user again. Trust <code>claim_slot</code>, not a value you read earlier.</td></tr><tr><td>Returns</td><td><code>{"slot_id", "drive_id", "starts_at", "status": "booked"}</code><br><code>starts_at</code> as an ISO-8601 string</td></tr></tbody></table></div>
+<div class="done"><label><input type="checkbox" data-part="1" data-key="1.5"><span>Done when</span></label><div class="done-body"><p>every Part 1 tool test passes.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part1_tools.py</code></pre></figure></div></div>
+</section>
+</section>
+
+<section id="part2" class="part" data-part="2">
+<h2><span class="pnum">2</span>A small agent <small>40 minutes</small></h2>
+<p>Put your tools behind a loop, then talk to it.</p>
+<section class="task" id="p2-1"><header class="task-head"><span class="num">2.1</span><h3>run_tool: a tool call that never crashes</h3><span class="mins">10 min</span></header>
+<p>In <code>app/agent.py</code>, <code>run_tool(name, args)</code> calls <code>self.tools.call(name, args)</code> and must never raise. A failure becomes a result the model can read and recover from. That is Day 1's self-healing, moved to where it belongs.</p>
+<div class="tbl spec"><table><thead><tr><th>when the tool...</th><th>return</th></tr></thead><tbody><tr><td>returns normally</td><td>its result, unchanged. Bad arguments and unknown tools already come back as <code>invalid_arguments</code> and <code>unknown_tool</code> from dispatch.</td></tr><tr><td>raises <code>NotImplementedError</code></td><td><code>{"error": "not_implemented", "hint": "..."}</code></td></tr><tr><td>raises anything else</td><td><code>{"error": "tool_failed", "hint": "..."}</code><br>Name the exception type in the hint, not its message.</td></tr></tbody></table></div>
+<div class="done"><label><input type="checkbox" data-part="2" data-key="2.1"><span>Done when</span></label><div class="done-body"><p>the unfinished-tool and crashing-tool tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part2_agent.py -k "unfinished or crashing"</code></pre></figure></div></div>
+</section><section class="task" id="p2-2"><header class="task-head"><span class="num">2.2</span><h3>ask: the agent loop</h3><span class="mins">20 min</span></header>
+<p><code>ask(text)</code> is one user turn. You wrote this loop on Day 1; this time it records a trace as it goes, because Part 3 saves exactly those steps.</p>
+<figure class="code"><figcaption>The shape of it</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>ask(text)
+  add the user message to self.contents
+  repeat:
+      turn = provider.generate(system, contents, tool functions)
+      log a "model" step
+      if turn has no tool calls:
+          add the model's reply to contents, return it
+      add the model turn, with its tool calls, to contents
+      for each call, in order:
+          result = run_tool(call)       time it
+          log a "tool" step              ok = "error" not in result
+          add {"role": "tool", "name", "result"} to contents
+  after MAX_STEPS steps: raise AgentError("step_limit", ...)</code></pre></figure>
+<div class="tbl spec"><table><thead><tr><th></th><th>details the tests check</th></tr></thead><tbody><tr><td>contents</td><td>User: <code>{"role": "user", "text"}</code>. Model: <code>{"role": "model", "text", "raw": turn.raw}</code>, plus <code>"tool_calls": [{"name", "args"}]</code> when it called tools. Always pass <code>raw</code> back: Gemini needs it.</td></tr><tr><td>trace</td><td>Model step: <code>{"step", "kind": "model", "tokens_in", "tokens_out"}</code>. Tool step: <code>{"step", "kind": "tool", "tool", "args", "result", "ok", "ms"}</code>. Steps are numbered 1, 2, 3 across both kinds. Add entries with <code>self._log(entry)</code>.</td></tr><tr><td>history</td><td><code>self.contents</code> is kept between calls to <code>ask</code>: the model is stateless, so every call resends the whole conversation.</td></tr><tr><td>errors</td><td>An <code>AgentError</code> from the provider passes straight through to the caller.</td></tr></tbody></table></div>
+<div class="done"><label><input type="checkbox" data-part="2" data-key="2.2"><span>Done when</span></label><div class="done-body"><p>every agent test passes.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part2_agent.py</code></pre></figure></div></div>
+</section><section class="task" id="p2-3"><header class="task-head"><span class="num">2.3</span><h3>Talk to your agent</h3><span class="mins">10 min</span></header>
+<p><code>scripts/chat.py</code> puts your loop and your tools in the terminal and prints every tool call, so you can see which tool the model chose and what your code returned.</p>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>python -m scripts.chat --mock                    # scripted model, no quota
+python -m scripts.chat                           # real Gemini, as 22CS045
+python -m scripts.chat --student 22IT017         # a student who fails Zoho's rules</code></pre></figure>
+<figure class="code"><figcaption>What a good turn looks like</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>you&gt; Which drives are open for CSE?
+  → list_open_drives({"branch": "CSE"})
+  ← {"drives": [{"drive_id": 2, "company": "TCS", ...}, {"drive_id": 1, "company": "Zoho", ...}]}  [0 ms]
+assistant&gt; Two drives are open for CSE: TCS and Zoho.</code></pre></figure>
+<p>Try "What's on my record?", "Am I eligible for Zoho?", "Apply me to Zoho", then "Book the first slot". When the model picks the wrong tool, the fix is in a description, not in the loop.</p>
+<div class="done"><label><input type="checkbox" data-part="2" data-key="2.3"><span>Done when</span></label><div class="done-body"><p>each of your three tools fires from a plain-English question at least once.</p></div></div>
+</section>
+</section>
+
+<section id="part3" class="part" data-part="3">
+<h2><span class="pnum">3</span>Memory <small>60 minutes</small></h2>
+<p>Give the agent a memory that survives a restart: a schema, the SQL behind it, and the wiring.</p>
+<section class="task" id="p3-1"><header class="task-head"><span class="num">3.1</span><h3>Design the memory schema</h3><span class="mins">20 min</span></header>
+<p>On Day 1 the agent's memory was a Python list that vanished when the program stopped. First on paper, with your neighbour: what entities are hiding in it? Is the unit of work a message, or something bigger? Write your answers in <code>docs/part3_design.md</code>.</p><p>Then finish <code>schema/agent.sql</code>. The <code>thread</code> table is given as the pattern. Every column is <code>NOT NULL</code> unless the table says otherwise, timestamps default to <code>strftime('%Y-%m-%dT%H:%M:%fZ', 'now')</code>, and every <code>→</code> is a <code>REFERENCES</code>.</p>
+<div class="tbl schema"><table><thead><tr><th>table</th><th>columns</th><th>constraints</th></tr></thead><tbody><tr><td><code>message</code></td><td><code>id</code> INTEGER PRIMARY KEY, <code>thread_id</code> TEXT → thread, <code>seq</code> INTEGER, <code>role</code> TEXT, <code>text</code> TEXT, <code>created_at</code> TEXT</td><td><code>UNIQUE (thread_id, seq)</code><br><code>role IN ('user', 'model')</code></td></tr><tr><td><code>run</code></td><td><code>id</code> TEXT PRIMARY KEY, <code>thread_id</code> TEXT → thread, <code>status</code> TEXT, <code>model</code> TEXT, <code>tokens_in</code> and <code>tokens_out</code> INTEGER default 0, <code>error_code</code> TEXT null, <code>started_at</code> TEXT, <code>finished_at</code> TEXT null</td><td><code>status IN ('running', 'succeeded', 'failed')</code></td></tr><tr><td><code>run_step</code></td><td><code>id</code> INTEGER PRIMARY KEY, <code>run_id</code> TEXT → run, <code>seq</code> INTEGER, <code>kind</code> TEXT, <code>tokens_in</code> and <code>tokens_out</code> INTEGER default 0, <code>created_at</code> TEXT</td><td><code>UNIQUE (run_id, seq)</code><br><code>kind IN ('model', 'tool')</code></td></tr><tr><td><code>tool_call</code></td><td><code>id</code> INTEGER PRIMARY KEY, <code>run_step_id</code> INTEGER → run_step, <code>tool_name</code> TEXT, <code>args</code> TEXT (JSON), <code>result</code> TEXT (JSON), <code>ok</code> INTEGER, <code>latency_ms</code> INTEGER, <code>created_at</code> TEXT</td><td><code>run_step_id</code> UNIQUE: one call per step<br><code>ok IN (0, 1)</code></td></tr></tbody></table></div>
+<p>Two things to notice. A tool call is something the agent <strong>did</strong>, not something anyone <strong>said</strong>, so it lives under <code>run_step</code> and <code>role</code> has no <code>tool</code> value. And nothing about students, drives or applications belongs in this file: the agent's memory stays apart from the placement data it acts on.</p>
+<div class="done"><label><input type="checkbox" data-part="3" data-key="3.1"><span>Done when</span></label><div class="done-body"><p>the schema tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part3_schema.py</code></pre></figure></div></div>
+</section><section class="task" id="p3-2"><header class="task-head"><span class="num">3.2</span><h3>ConversationStore: the SQL</h3><span class="mins">25 min</span></header>
+<p>Six methods in <code>app/memory.py</code>. The connection is in autocommit mode, so each statement commits on its own unless you wrap statements in <code>with self.transaction() as conn:</code>, which is given.</p>
+<div class="tbl spec"><table><thead><tr><th>method</th><th>does</th></tr></thead><tbody><tr><td><code>append_message(thread_id, role, text)</code></td><td>Insert with <code>seq</code> = the thread's highest seq + 1, computed inside the same <code>INSERT</code>. Return the seq.</td></tr><tr><td><code>load_history(thread_id)</code></td><td><code>[{"seq", "role", "text"}]</code> in seq order.</td></tr><tr><td><code>start_run(thread_id, model)</code></td><td>New run, <code>uuid4</code> id, status <code>running</code>. Return the id.</td></tr><tr><td><code>record_model_step(run_id, seq, tokens_in, tokens_out)</code></td><td>Insert a <code>model</code> step <strong>and</strong> add its tokens to the run. One transaction.</td></tr><tr><td><code>record_tool_call(run_id, seq, name, args, result, ok, latency_ms)</code></td><td>Insert a <code>tool</code> step and its <code>tool_call</code>, with <code>args</code> and <code>result</code> as JSON. One transaction. Return the step id.</td></tr><tr><td><code>finish_run(run_id, status, error_code=None)</code></td><td>Set status, error code and <code>finished_at</code>.</td></tr></tbody></table></div>
+<figure class="code"><figcaption>One transaction</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>with self.transaction() as conn:
+    step_id = conn.execute("INSERT INTO run_step ...", (...)).lastrowid
+    conn.execute("INSERT INTO tool_call ...", (step_id, ...))
+    return step_id</code></pre></figure>
+<p>One test makes the second insert fail on purpose and checks that the first one was rolled back too. Always use <code>?</code> placeholders; never build SQL with f-strings.</p>
+<div class="done"><label><input type="checkbox" data-part="3" data-key="3.2"><span>Done when</span></label><div class="done-body"><p>the store tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part3_memory.py -k "not agent"</code></pre></figure></div></div>
+</section><section class="task" id="p3-3"><header class="task-head"><span class="num">3.3</span><h3>An agent that remembers</h3><span class="mins">15 min</span></header>
+<p>Wire the store into <code>Agent</code>. Everything is optional: when <code>self.memory</code> is <code>None</code>, the agent behaves exactly as in Part 2 and those tests must still pass. The rule is <strong>write as it happens</strong>: if the program dies after <code>apply_to_drive</code> succeeds, the database must still show which run did it and why.</p>
+<div class="tbl spec"><table><thead><tr><th>where</th><th>what to save</th></tr></thead><tbody><tr><td><code>__init__</code></td><td>Start <code>self.contents</code> from <code>memory.load_history(thread_id)</code>.</td></tr><tr><td>start of <code>ask</code></td><td>Save the user message, then <code>start_run</code>.</td></tr><tr><td>every model step</td><td><code>record_model_step</code>, before looking at the tool calls.</td></tr><tr><td>every tool step</td><td><code>record_tool_call</code>, right after the tool returns.</td></tr><tr><td>the answer</td><td>Save the model's reply, then <code>finish_run("succeeded")</code>.</td></tr><tr><td><code>AgentError</code></td><td><code>finish_run("failed", e.code)</code>, then re-raise.</td></tr></tbody></table></div>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>python -m scripts.chat --db agent.db
+# note the thread id it prints, quit, then carry on the same conversation:
+python -m scripts.chat --db agent.db --thread &lt;id&gt;</code></pre></figure>
+<div class="done"><label><input type="checkbox" data-part="3" data-key="3.3"><span>Done when</span></label><div class="done-body"><p>all memory tests pass, and a restarted chat remembers what you said.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_part3_memory.py tests/test_part2_agent.py</code></pre></figure></div></div>
+</section>
+</section>
+
+<section id="part4" class="part" data-part="4">
+<h2><span class="pnum">4</span>Lab <small>90 minutes</small></h2>
+<p>On your own. If time runs short, do L2 and L3 first; they are the quickest to finish.</p>
+<section class="task" id="l1"><header class="task-head"><span class="num">L1</span><h3>A tool that fires once</h3><span class="mins">35 min</span></header>
+<p>Implement <code>notify_student(student_id, message)</code>. It checks the student exists, rejects a message that is empty or longer than 160 characters with <code>invalid_message</code>, calls <code>self.notifier.send(student_id, message)</code> and returns <code>{"notification_id", "status": "queued"}</code>.</p><p>The code is the easy half. The real task is the description: it must fire on exactly one of four prompts. Edit <code>PROMPTS</code> in <code>scripts/ab_descriptions.py</code> to four of your own, three of which sound close but should not send anything. Run it, rewrite the description, run it again.</p>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>python -m scripts.ab_descriptions --dry-run      # exactly what the model sees
+python -m scripts.ab_descriptions --trials 3     # 12 calls; pauses to respect the free tier</code></pre></figure>
+<div class="done"><label><input type="checkbox" data-part="4" data-key="L1"><span>Done when</span></label><div class="done-body"><p>the lab 1 tests pass and <code>docs/lab1_ab.md</code> shows your final description firing 3/3 on its prompt and 0/3 on the other three.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_lab1_notify.py</code></pre></figure></div></div>
+</section><section class="task" id="l2"><header class="task-head"><span class="num">L2</span><h3>Prove append-only</h3><span class="mins">20 min</span></header>
+<p>In <code>schema/append_only.sql</code>, make SQLite itself refuse <code>UPDATE</code> and <code>DELETE</code> on <code>message</code>, whichever program connects. A rule in your Python code does not count. Look up <code>CREATE TRIGGER ... BEFORE UPDATE</code> and <code>RAISE(ABORT, ...)</code>.</p>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>python -m scripts.chat --db agent.db             # say something, then quit
+python -c "import sqlite3; sqlite3.connect('agent.db').execute('UPDATE message SET text = 1')"   # must fail</code></pre></figure>
+<div class="done"><label><input type="checkbox" data-part="4" data-key="L2"><span>Done when</span></label><div class="done-body"><p>the append-only tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_lab2_append_only.py</code></pre></figure></div></div>
+</section><section class="task" id="l3"><header class="task-head"><span class="num">L3</span><h3>Read history page by page</h3><span class="mins">25 min</span></header>
+<div class="tbl spec"><table><thead><tr><th></th><th>page_messages(thread_id, after_seq=0, limit=20)</th></tr></thead><tbody><tr><td>Returns</td><td><code>(items, next_after)</code>. <code>items</code> are <code>{"seq", "role", "text", "created_at"}</code> with <code>seq &gt; after_seq</code>, in order.</td></tr><tr><td>next_after</td><td>The <code>after_seq</code> for the next page, or <code>None</code> on the last page. When the count is an exact multiple of <code>limit</code>, the last full page already returns <code>None</code>: fetch <code>limit + 1</code> rows to find out.</td></tr><tr><td>Query</td><td><code>WHERE seq &gt; ?</code>, no <code>OFFSET</code>. A message added between two calls must not shift or repeat anything.</td></tr><tr><td>limit</td><td>Below 1 raises <code>ValueError</code>.</td></tr></tbody></table></div>
+<div class="done"><label><input type="checkbox" data-part="4" data-key="L3"><span>Done when</span></label><div class="done-body"><p>the pagination tests pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_lab3_pagination.py</code></pre></figure></div></div>
+</section><section class="task" id="lab-s"><header class="task-head"><span class="num">S</span><h3>Stretch: design a tool, or type a verdict</h3><span class="mins">stretch</span></header>
+<p><strong>A tool of your own.</strong> Add <code>list_my_applications(student_id)</code> for "where have I applied?" and "when is my interview?". Nothing is sketched for you: write the description, add the name to <code>READ_ONLY</code>, and return <code>{"applications": [{"application_id", "drive_id", "company", "role", "status", "applied_on", "interview_at"}]}</code>, oldest first. <code>repo.list_applications(student.id)</code> is already given, and the tests switch on the moment the method exists.</p><p><strong>A typed verdict.</strong> In <code>app/verdict.py</code>, add a <code>model_validator</code> that rejects a verdict whose <code>eligible</code> flag contradicts <code>failed_rules</code>. Then implement <code>structured_verdict</code>: validate the model's JSON, send the validation errors back as the next message, and give up after <code>max_retries</code>.</p>
+<div class="done"><label><input type="checkbox" data-part="s" data-key="stretch"><span>Done when</span></label><div class="done-body"><p>the stretch tests you attempted pass.</p><figure class="code"><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest tests/test_stretch_my_applications.py tests/test_stretch_verdict.py</code></pre></figure></div></div>
+</section>
+</section>
+
+<section id="finish" class="part">
+<h2><span class="pnum">&nbsp;</span>Hand in</h2>
+<figure class="code"><figcaption>Terminal</figcaption><button class="copy" type="button" aria-label="Copy code">Copy</button><pre><code>pytest</code></pre></figure>
+<ul class="checklist">
+<li>Five tools: the two samples plus <code>get_student</code>, <code>list_open_drives</code> and <code>book_interview_slot</code>.</li>
+<li>An agent you can talk to with <code>python -m scripts.chat</code>, which remembers the conversation with <code>--db</code>.</li>
+<li><code>docs/part3_design.md</code> and <code>docs/lab1_ab.md</code> filled in.</li>
+</ul>
+<div class="checkpoint">
+<p class="cp-label">Checkpoint question</p>
+<p class="cp-q">Why does the agent's memory live apart from the placement data, and what breaks if you put them together?</p>
+<p>Answer in <code>docs/part3_design.md</code>. Name at least one concrete failure.</p>
+</div>
+</section>
+
+</main>
+</div>
+
+<footer class="site-foot"><span>SoDak EduTech Day 2</span><span>Agentic AI Track, full-stack SDE cohort</span></footer>
+<div class="print-foot">SoDak EduTech Day 2</div>
+
+<script>
+(() => {
+  const KEY = "sodak-day2-lab-v2";
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; } };
+  const save = (state) => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+  const state = load();
+  const boxes = [...document.querySelectorAll('.done input[type="checkbox"]')];
+
+  function render() {
+    boxes.forEach(b => b.closest(".done").classList.toggle("is-done", b.checked));
+    [1, 2, 3, 4].forEach(p => {
+      const all = boxes.filter(b => b.dataset.part === String(p));
+      const n = all.filter(b => b.checked).length;
+      const seg = document.querySelector(`[data-seg="${p}"]`);
+      if (seg) seg.style.setProperty("--p", all.length ? (100 * n / all.length) + "%" : "0%");
+      const c = document.querySelector(`[data-count="${p}"]`);
+      if (c) { c.textContent = `${n}/${all.length}`; c.classList.toggle("complete", n === all.length && n > 0); }
+    });
+  }
+  boxes.forEach(b => {
+    b.checked = !!state[b.dataset.key];
+    b.addEventListener("change", () => { state[b.dataset.key] = b.checked; save(state); render(); });
+  });
+  document.getElementById("reset").addEventListener("click", () => {
+    boxes.forEach(b => { b.checked = false; state[b.dataset.key] = false; }); save(state); render();
+  });
+  render();
+
+  // copy buttons
+  document.querySelectorAll("figure.code .copy").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const text = btn.parentElement.querySelector("pre code").innerText;
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch {
+        try {
+          const r = document.createRange(); r.selectNodeContents(btn.parentElement.querySelector("pre"));
+          const s = getSelection(); s.removeAllRanges(); s.addRange(r); ok = document.execCommand("copy");
+        } catch {}
+      }
+      btn.textContent = ok ? "Copied" : "Press Ctrl+C";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+    });
+  });
+
+  // theme toggle
+  const root = document.documentElement, tbtn = document.getElementById("theme");
+  const THEME = "sodak-day2-theme";
+  const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  try { const t = localStorage.getItem(THEME); if (t) root.dataset.theme = t; } catch {}
+  const label = () => { tbtn.textContent = isDark() ? "Light mode" : "Dark mode"; };
+  tbtn.addEventListener("click", () => { root.dataset.theme = isDark() ? "light" : "dark"; try { localStorage.setItem(THEME, root.dataset.theme); } catch {} label(); });
+  label();
+
+  // current section in the nav
+  const links = new Map([...document.querySelectorAll("nav.toc a")].map(a => [a.getAttribute("href").slice(1), a]));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { links.forEach(a => a.classList.remove("active")); links.get(e.target.id)?.classList.add("active"); } });
+  }, { rootMargin: "0px 0px -75% 0px" });
+  document.querySelectorAll("section[id]").forEach(s => { if (links.has(s.id)) obs.observe(s); });
+})();
+</script>
+</body>
+</html>
