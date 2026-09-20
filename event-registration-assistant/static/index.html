@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Event Registration Platform</title>
+  <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-container">
+      <a href="#" class="logo">
+        <div class="logo-icon">E</div>
+        <span>EventHub</span>
+      </a>
+
+      <div class="nav-controls">
+        <nav class="nav-tabs">
+          <button class="tab-btn active" data-view="events-view">Events</button>
+          <button class="tab-btn" data-view="chat-view">AI Assistant</button>
+        </nav>
+
+        <select id="student-select" class="student-select">
+          <option value="22CS045">22CS045 - Priya Raman (CSE)</option>
+          <option value="22IT017">22IT017 - Arjun Kumar (IT)</option>
+          <option value="22EC031">22EC031 - Divya Sekar (ECE)</option>
+        </select>
+
+        <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          🌙
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- View 1: Event Cards Grid -->
+    <section id="events-view" class="view-section active">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">Upcoming College Events</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">Browse hackathons, symposiums, and technical workshops.</p>
+        </div>
+        <div class="search-bar">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+          <input type="text" id="event-search" placeholder="Search events by title or dept...">
+        </div>
+      </div>
+
+      <div id="events-grid" class="events-grid">
+        <!-- Event cards will be populated dynamically -->
+      </div>
+    </section>
+
+    <!-- View 2: AI Assistant Chat Interface -->
+    <section id="chat-view" class="view-section">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-header-title">
+            <div class="status-dot"></div>
+            <span>Campus Event Registration Assistant</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);" id="current-student-label">Student: 22CS045</span>
+        </div>
+
+        <div id="chat-messages" class="chat-messages">
+          <div class="message assistant">
+            <div class="message-bubble">
+              Hello! I am your Event Registration Assistant. Ask me to search for events, check seat availability, or register you for any hackathon or symposium!
+            </div>
+          </div>
+        </div>
+
+        <form id="chat-form" class="chat-input-area">
+          <input type="text" id="chat-input" placeholder="Type a message (e.g. Is AI Hackathon 2026 open? Register me for it.)..." required autocomplete="off">
+          <button type="submit" id="send-btn" class="send-btn">Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Campus Event Registration Platform Service &bull; Agentic AI Backend
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
