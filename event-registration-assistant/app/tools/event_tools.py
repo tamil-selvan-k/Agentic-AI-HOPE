@@ -150,11 +150,11 @@ class DeskTools(Toolset):
         return {"event_id": event_id, "title": event["title"], "status": status}
 
     def unregister_event(self, event_id: int = 0, event_title: str = "") -> dict:
-        """Cancel or unregister an event registration for the current student. CHANGES DATA: returns seat to event.
+        """Cancel the current student's event registration. CHANGES DATA: returns the seat to the event.
 
-        Use when the student asks to "unregister", "cancel my registration", "withdraw from event", or drop out.
-        If the student does NOT know the event_id, pass event_id=0 or event_title="". If the student holds one registration,
-        it will automatically resolve and unregister that event.
+        Call this to unregister or cancel a registration. Pass event_id if known; pass event_title to
+        match by name. If both are omitted (defaults), it auto-resolves when the student has exactly one
+        active registration. Always follow with notify_student to confirm the cancellation.
 
         Args:
             event_id: Integer event_id (optional, pass 0 if unknown).
@@ -162,7 +162,7 @@ class DeskTools(Toolset):
 
         Returns:
             {"event_id", "title", "status": "unregistered" | "already_unregistered"}, or an error:
-            not_allowed, not_registered, or multiple_registrations (list of active events).
+            not_registered, or multiple_registrations (list of active events to pick from).
         """
         student = self._student()
         status, details = self.db.unregister(student["id"], event_id, event_title)

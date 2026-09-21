@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.config import make_providers, open_stores
 from app.worker import Worker
+from app.event_db import EventDb
 
 app = FastAPI(title="Campus Event Registration Platform")
 
@@ -32,6 +33,12 @@ def get_index():
     index_file = STATIC_DIR / "index.html"
     return index_file.read_text(encoding="utf-8")
 
+@app.get("/seed")
+def seed_db():
+    seed = EventDb()
+    seed.migrate()
+    return ["seeded"]
+    
 
 @app.get("/api/events")
 def get_events():

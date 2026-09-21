@@ -141,7 +141,8 @@ CREATE TABLE IF NOT EXISTS idempotency (
 INSERT INTO student (id, reg_num, name, dept, password, max_registrations) VALUES
     (1, '22CS045', 'Priya Raman', 'CSE', 'pass123', 3),
     (2, '22IT017', 'Arjun Kumar', 'IT', 'pass123', 1),
-    (3, '22EC031', 'Divya Sekar', 'ECE', 'pass123', 1)
+    (3, '22EC031', 'Divya Sekar', 'ECE', 'pass123', 1),
+    (4, '24IT1444', 'Sam Raj', 'IT', '12345678', 50)
 ON CONFLICT (reg_num) DO NOTHING;
 
 INSERT INTO event (id, title, category, organizer, seats_total, seats_available, version) VALUES

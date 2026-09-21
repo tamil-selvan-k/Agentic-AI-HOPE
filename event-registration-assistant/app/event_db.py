@@ -26,7 +26,8 @@ class EventDb:
                 (1, "22CS045", "Priya Raman", "CSE", "pass123", 3),
                 (2, "22IT017", "Arjun Kumar", "IT", "pass123", 1),
                 (3, "22EC031", "Divya Sekar", "ECE", "pass123", 1), 
-                (4, "24IT1444", "Sam Raj", "IT", "12345678", 50)])
+                (4, "24IT1444", "Sam Raj", "IT", "12345678", 50),
+                (5, "24IT1445", "Raj kumar", "IT", "12345678", 50)])
             c.executemany("INSERT INTO event VALUES (?, ?, ?, ?, ?, ?, 0)", [
                 (1, "AI Hackathon 2026", "hackathon", "CSE Dept", 50, 50),
                 (2, "Web3 & Cloud Symposium", "symposium", "IT Dept", 1, 1),

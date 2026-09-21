@@ -46,28 +46,34 @@ class GroqProvider:
 
     def _to_groq_messages(self, system: str, contents: list[dict]) -> list[dict]:
         messages = [{"role": "system", "content": system}]
+        pending_ids: list[str] = []  # IDs for tool calls awaiting results, consumed FIFO
         for c in contents:
             role = c["role"]
             if role == "user":
                 messages.append({"role": "user", "content": c["text"]})
+                pending_ids = []
             elif role == "model":
                 msg = {"role": "assistant"}
                 if c.get("text"):
                     msg["content"] = c["text"]
                 if c.get("tool_calls"):
-                    msg["tool_calls"] = [
-                        {
-                            "id": f"call_{i}_{tc['name']}",
+                    pending_ids = []
+                    tool_calls = []
+                    for i, tc in enumerate(c["tool_calls"]):
+                        call_id = f"call_{i}_{tc['name']}"
+                        pending_ids.append(call_id)
+                        tool_calls.append({
+                            "id": call_id,
                             "type": "function",
                             "function": {"name": tc["name"], "arguments": json.dumps(tc["args"])},
-                        }
-                        for i, tc in enumerate(c["tool_calls"])
-                    ]
+                        })
+                    msg["tool_calls"] = tool_calls
                 messages.append(msg)
             elif role == "tool":
+                call_id = pending_ids.pop(0) if pending_ids else f"call_0_{c['name']}"
                 messages.append({
                     "role": "tool",
-                    "tool_call_id": f"call_0_{c['name']}",
+                    "tool_call_id": call_id,
                     "content": json.dumps(c["result"])
                 })
         return messages

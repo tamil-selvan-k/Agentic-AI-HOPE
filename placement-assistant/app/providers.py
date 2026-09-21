@@ -33,64 +33,65 @@ class ModelTurn:
 
 
 class GeminiProvider:
+    """Gemini provider via LangChain (reads GOOGLE_API_KEY env var)."""
+
     def __init__(self, model: str):
-        from google import genai
+        from langchain_google_genai import ChatGoogleGenerativeAI
 
-        self.client = genai.Client()        # reads GEMINI_API_KEY
         self.model = model
+        self._llm = ChatGoogleGenerativeAI(model=model, temperature=0)
 
-    def _to_gemini(self, contents: list[dict]):
-        from google.genai import types
+    def _to_messages(self, system: str, contents: list[dict]):
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-        out: list = []
+        messages = [SystemMessage(content=system)]
+        pending_ids: list[str] = []
+        tool_idx = 0
+
         for c in contents:
             if c["role"] == "user":
-                out.append(types.Content(role="user", parts=[types.Part.from_text(text=c["text"])]))
+                messages.append(HumanMessage(content=c["text"]))
+                pending_ids = []
+                tool_idx = 0
             elif c["role"] == "model":
-                if c.get("raw") is not None:
-                    out.append(c["raw"])
-                    continue
-                parts = [types.Part.from_text(text=c["text"])] if c.get("text") else []
-                parts += [types.Part.from_function_call(name=t["name"], args=t["args"])
-                          for t in c.get("tool_calls", [])]
-                out.append(types.Content(role="model", parts=parts))
+                calls = c.get("tool_calls", [])
+                pending_ids = [f"call_{i}_{t['name']}" for i, t in enumerate(calls)]
+                tool_idx = 0
+                lc_calls = [
+                    {"id": pending_ids[i], "name": t["name"], "args": t["args"], "type": "tool_call"}
+                    for i, t in enumerate(calls)
+                ]
+                messages.append(AIMessage(content=c.get("text") or "", tool_calls=lc_calls))
             elif c["role"] == "tool":
-                part = types.Part.from_function_response(name=c["name"], response=c["result"])
-                # Results of parallel calls travel together in one turn.
-                if out and out[-1].role == "user" and all(p.function_response for p in out[-1].parts):
-                    out[-1].parts.append(part)
-                else:
-                    out.append(types.Content(role="user", parts=[part]))
-        return out
+                call_id = pending_ids[tool_idx] if tool_idx < len(pending_ids) else c["name"]
+                messages.append(ToolMessage(content=str(c["result"]), tool_call_id=call_id, name=c["name"]))
+                tool_idx += 1
+
+        return messages
 
     def generate(self, system: str, contents: list[dict], tools: list) -> ModelTurn:
-        from google.genai import errors, types
-
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            tools=tools,
-            temperature=0,
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-        )
+        llm = self._llm.bind_tools(tools) if tools else self._llm
+        messages = self._to_messages(system, contents)
         try:
-            resp = self.client.models.generate_content(
-                model=self.model, contents=self._to_gemini(contents), config=config)
-        except errors.APIError as e:
-            if e.code == 429:
+            resp = llm.invoke(messages)
+        except Exception as e:
+            msg = str(e)
+            if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
                 raise AgentError("provider_rate_limited", "Model quota exhausted. Wait a minute.", True) from e
-            if e.code and e.code >= 500:
+            if any(code in msg for code in ("500", "502", "503")):
                 raise AgentError("provider_unavailable", "Model provider failed.", True) from e
-            raise AgentError("provider_error", str(e), False) from e
+            raise AgentError("provider_error", msg, False) from e
 
-        content = resp.candidates[0].content if resp.candidates else None
-        parts = (content.parts or []) if content else []
-        text = "".join(p.text for p in parts if p.text and not p.thought) or None
-        calls = [ToolCall(fc.name, dict(fc.args or {})) for fc in (resp.function_calls or [])]
-        usage = resp.usage_metadata
-        return ModelTurn(text=text, tool_calls=calls,
-                         tokens_in=(usage.prompt_token_count or 0) if usage else 0,
-                         tokens_out=(usage.candidates_token_count or 0) if usage else 0,
-                         raw=content)
+        text = resp.content if isinstance(resp.content, str) and resp.content else None
+        calls = [ToolCall(tc["name"], tc["args"]) for tc in (resp.tool_calls or [])]
+        usage = resp.usage_metadata or {}
+        return ModelTurn(
+            text=text,
+            tool_calls=calls,
+            tokens_in=usage.get("input_tokens", 0),
+            tokens_out=usage.get("output_tokens", 0),
+            raw=None,
+        )
 
 
 class ScriptedProvider:

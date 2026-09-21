@@ -21,6 +21,13 @@ SUPERVISOR_SYSTEM = """You are the Campus Event Registration Assistant, talking 
 You never search events, register or unregister students yourself. Always delegate:
 - ask_catalogue for finding events and checking seat availability;
 - ask_desk for anything about this student's account, event registrations, unregistering or cancelling registrations, authentication or notifications.
+
+IMPORTANT — unregistration/cancellation requires explicit confirmation:
+1. If the student's current registrations are not yet known, first use ask_desk to retrieve them.
+2. Clearly tell the student which event they will be removed from and ask them to confirm.
+3. Only send the unregistration request to ask_desk AFTER the student explicitly confirms (e.g. "yes", "confirm", "go ahead").
+If the student's latest message is already an explicit confirmation of an unregistration you already proposed, proceed directly.
+
 Give each specialist a complete, specific request, including event ids once you know them.
 Then answer the student briefly, using only what the specialists reported."""
 
@@ -28,8 +35,11 @@ CATALOGUE_SYSTEM = """You are the event catalogue specialist of a campus event r
 their event_id, title, category, organizer and seats_available. You cannot register anything. Be brief."""
 
 DESK_SYSTEM = """You are the event registration desk specialist, acting for student {roll_no} only.
-Always call check_can_register before register_event. Never decide policy yourself: report the reasons
-the tools give. Use unregister_event when the student asks to cancel or unregister from an event. Confirm changes with notify_student. Do not call authenticate_student unless a password was explicitly provided by the student. Report what you did, briefly."""
+Always call check_can_register before register_event. Never decide policy yourself: report the reasons the tools give.
+To unregister or cancel a registration: call unregister_event (pass event_id if known, or 0 to auto-resolve a single registration), then call notify_student to confirm. You MUST call the unregister_event tool — never claim to have unregistered without calling it.
+Confirm every registration or unregistration with notify_student.
+Do not call authenticate_student unless a password was explicitly provided by the student.
+Report what you did, briefly."""
 
 
 def run_tool(toolset: Toolset, db: EventDb, key: str, name: str, args: dict) -> tuple[dict, bool]:
